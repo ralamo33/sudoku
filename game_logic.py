@@ -18,11 +18,11 @@ class Tile:
 
 
 def initialize_board():
-    row = []
-    for i in range(0, 9):
-        row.append(Tile())
     board = []
-    for j in range(0, 9):
+    for i in range(0, 9):
+        row = []
+        for j in range(0, 9):
+            row.append(Tile())
         board.append(row)
     return board
 
@@ -60,10 +60,12 @@ def solve_tile(board, coordinates):
     if tile.num != -1:
         raise SolvedError()
     else:
-        solutions = [range(0, 10)]
-        solutions = eliminate_row(board[coordinates[0]], solutions)
-        solutions = eliminate_col(board, coordinates[1], solutions)
-        solutions = eliminate_submatrix(board, coordinates, solutions)
+        solutions = [i for i in range(1, 10)]
+        eliminate_row(board[coordinates[0]], solutions)
+        eliminate_col(board, coordinates[1], solutions)
+        eliminate_submatrix(board, coordinates, solutions)
+        selected_solution = random.randrange(0, len(solutions))
+        tile.assign_number(solutions[selected_solution])
 
 def eliminate_row(row, solutions):
     """Remove entries in the tile's row from the list of potential solutions.
