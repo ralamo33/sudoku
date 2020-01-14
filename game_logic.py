@@ -16,6 +16,21 @@ class Tile:
             raise Exception("Wrong input type.")
         self.num = num
 
+    def display(self):
+        """Display this tile.
+
+        :return self.num as a String
+        """
+        if self.num == -1:
+            return "_"
+        return str(self.num)
+
+class SolvedError(Exception):
+    """Raise the exception when you attempt to solve an already solved board tile."""
+
+    def __init__(self, message="Tile already solved", errors=None):
+        super().__init__(message)
+        self.errors = errors
 
 def initialize_board():
     board = []
@@ -111,6 +126,7 @@ def eliminate_submatrix(board, coordinates, solutions):
             solutions = eliminate_solution(board[r][c].num, solutions)
     return solutions
 
+
 def eliminate_solution(eliminate, solutions):
     """Remove eliminate from the list of solutions if possible.
 
@@ -124,15 +140,22 @@ def eliminate_solution(eliminate, solutions):
     return solutions
 
 
+def display(board):
+    """Display the given board.
 
-class SolvedError(Exception):
-    """Raise the exception when you attempt to solve an already solved board tile."""
+    :parameter board (List): The board Soduku is played on.
 
-    def __init__(self, message="Tile already solved", errors=None):
-        super().__init__(message)
-        self.errors = errors
+    :return image (String): Represents the image of the board.
+    """
+    #ToDo: Fix string concatenation, there are better ways.
+    image = ""
+    for row in board:
+        for tile in row:
+            image += tile.display() + " "
+        image += "\n"
+    return image
 
-#ToDo: Write tests for Solved Solution.
 if __name__ == "__main__":
    board = initialize_board()
    ready_board(board)
+   print(display(board))
