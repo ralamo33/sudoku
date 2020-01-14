@@ -147,13 +147,15 @@ def display(board):
 
     :return image (String): Represents the image of the board.
     """
-    #ToDo: Fix string concatenation, there are better ways.
-    image = ""
+    r = []
     for row in board:
+        col = []
         for tile in row:
-            image += tile.display() + " "
-        image += "\n"
+            col.append(tile.display())
+        r.append(" ".join(col))
+    image = "\n".join(r)
     return image
+
 
 if __name__ == "__main__":
    board = initialize_board()
