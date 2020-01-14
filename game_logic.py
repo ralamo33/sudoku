@@ -1,10 +1,13 @@
 import random
+import unittest
+import pytest
 
 """The logic behind running a game of sudoku."""
 
 
 class Tile:
     """A single tile of a Sukdou board"""
+
     def __init__(self):
         self.num = -1
 
@@ -12,6 +15,7 @@ class Tile:
         if not isinstance(num, int):
             raise Exception("Wrong input type.")
         self.num = num
+
 
 def initialize_board():
     row = []
@@ -38,9 +42,21 @@ def ready_board(board, reveal=10):
         solve_tile(board, selected)
     return board
 
-def solve_tile(board, selected):
-    pass
 
+def solve_tile(board, selected):
+    tile = board[selected[0]][selected[1]]
+    if tile.num != -1:
+        raise SolvedError("Tile already solved")
+    else:
+        pass
+
+
+class SolvedError(Exception):
+    """Raise the exception when you attempt to solve an already solved board tile."""
+
+    def __init__(self, message=None, errors=None):
+        super().__init__(message)
+        self.errors = errors
 
 
 def board_coordinates():
@@ -49,6 +65,15 @@ def board_coordinates():
             yield (i, j)
 
 
-if __name__ == "__main__":
+
+
+def test_already_solved():
     board = initialize_board()
-    ready_board(board)
+    board[0][0].num = 3
+    with pytest.raises(SolvedError):
+        assert solve_tile(board, (0, 0))
+
+if __name__ == "__main__":
+    test_already_solved()
+ #   board = initialize_board()
+ #   ready_board(board)
