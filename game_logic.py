@@ -1,6 +1,5 @@
 import random
 import unittest
-import pytest
 
 """The logic behind running a game of sudoku."""
 
@@ -34,7 +33,7 @@ def ready_board(board, reveal=10):
 
     :return board The board ready for the player
     """
-    coordinates = list(board_coordinates())
+    coordinates = list(_board_coordinates())
     for r in range(0, reveal):
         revealed = random.randint(0, len(coordinates) - 1)
         selected = coordinates[revealed]
@@ -42,11 +41,15 @@ def ready_board(board, reveal=10):
         solve_tile(board, selected)
     return board
 
+def _board_coordinates():
+    for i in range(0, 9):
+        for j in range(0, 9):
+            yield (i, j)
 
 def solve_tile(board, selected):
     tile = board[selected[0]][selected[1]]
     if tile.num != -1:
-        raise SolvedError("Tile already solved")
+        raise SolvedError()
     else:
         pass
 
@@ -54,26 +57,10 @@ def solve_tile(board, selected):
 class SolvedError(Exception):
     """Raise the exception when you attempt to solve an already solved board tile."""
 
-    def __init__(self, message=None, errors=None):
+    def __init__(self, message="Tile already solved", errors=None):
         super().__init__(message)
         self.errors = errors
 
-
-def board_coordinates():
-    for i in range(0, 9):
-        for j in range(0, 9):
-            yield (i, j)
-
-
-
-
-def test_already_solved():
-    board = initialize_board()
-    board[0][0].num = 3
-    with pytest.raises(SolvedError):
-        assert solve_tile(board, (0, 0))
-
 if __name__ == "__main__":
-    test_already_solved()
- #   board = initialize_board()
- #   ready_board(board)
+   board = initialize_board()
+   ready_board(board)
