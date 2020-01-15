@@ -3,7 +3,6 @@ import math
 """Solves a sudoku board using Knuth's Algorithm."""
 
 CONSTRAINT_LENGTH = 81
-HEADER_SPACE = 1
 
 def cell_to_row(row, cell, number):
     """Use a sudoku cell to get the cooresponding row on Knuth Matrix."""
@@ -14,24 +13,21 @@ class KnuthMatrix:
     """A Sudoku board converted into an exact cover problem solvable by Knuth's Algorithm."""
 
     def __init__(self):
-        self.matrix = []
+        self.matrix = dict()
         self.row_builder_iterator = RowBuilderIterator()
         for rb in self.row_builder_iterator:
-            self.matrix.append(rb)
+            self.matrix.update({rb.header : rb.make_row()})
 
     def display(self):
         image = []
         for rb in self.matrix:
-            image.append(str(rb.make_row()))
+            image.append(str(self.matrix[rb]))
         return "\n".join(image).replace(",", " |")
 
     def write(self, file):
         f = open(file, "w")
         f.write(self.display())
         f.close()
-
-    def select(self, row, col, number):
-        """Choose a """
 
 
 class RowBuilderIterator:
@@ -70,6 +66,7 @@ class RowBuilder:
         self.row = row
         self.col = col
         self.number = number
+        self.header = (self.row, self.col, self.number)
         self.building = self._initialize_row()
 
     def make_row(self):
@@ -125,24 +122,10 @@ def knuth_algorithm(matrix, already_selected = None):
 def select(matrix, cell):
     """Select the cell from the matrix and reduce the matrix appopriately.
 
-    :parameter matrix (KnuthMatrix): A matrix in a form solvable by this algortihm.
-    :parameter cell (Tuple): A tuple of row,cell,number to indicate which row of the matrix is being selected.
+    :parameter matrix (KnuthMatrix): A matrix in a form solvable by Knuth Algorithm.
+    :parameter cell (tuple): Indicator of which row in the matrix the selected cell belongs to.
     """
 
-    
-
-class KnuthAlgorithm:
-
-    def __init__(self, matrix=KnuthMatrix(), already_selected=None):
-     """
-    """
-
-    def solve(self, already_selected = None):
-
-        for cell in already_selected:
-            self.matrix.select(cell)
-        while len(self.matrix) > 0:
-            pass
 
 if __name__ == "__main__":
     print(1 == True)
