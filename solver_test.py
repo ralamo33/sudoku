@@ -4,8 +4,7 @@ from solver import *
 
 def find_actives(row, col, number):
     """Helper to test_row_builder. Creates an array with all the indices in the row that are active."""
-    row_builder = RowBuilder(row, col, number)
-    row = row_builder.make_row()
+    row = build_knuth_row(row, col, number)
     active = []
     for index, value in enumerate(row):
         if value:
@@ -27,14 +26,14 @@ class MyTestCase(unittest.TestCase):
 
     def test_row_builder_iterator(self):
         row_builders = []
-        iterator = RowBuilderIterator()
+        iterator = RowGenerator()
         for rb in iterator:
             row_builders.append(rb)
         self.assertEqual(729, len(row_builders))
 
     def test_matrix(self):
-        matrix = KnuthMatrix()
-        matrix.write("KnuthMatrix")
+        matrix = build_knuth_matrix()
+        write(matrix, "KnuthMatrix")
 
 if __name__ == '__main__':
     unittest.main()
