@@ -21,7 +21,7 @@ class MyTestCase(unittest.TestCase):
     def test_matrix_(self):
         """Testing that each column of the matrix is active in 9 rows.
         This is how the matrix of a 3 X 3 sudoku board should be."""
-        matrix = KnuthMatrix()
+        matrix = KnuthMatrix(init_rows(), init_cols())
         column_activations = defaultdict(int)
         for header, krow in matrix.rows.items():
             for column in krow.knuth_cols:
@@ -29,6 +29,19 @@ class MyTestCase(unittest.TestCase):
         for k, v in column_activations.items():
             self.assertEqual(9, v)
 
+    def test_get_active_rows(self):
+        """Test get active rows method in Matrix."""
+        matrix = KnuthMatrix(init_rows(), init_cols())
+        active = matrix.get_active_rows(0)
+        self.assertEqual(9, len(active))
+        for row in active:
+            self.assertEqual(0, row.row)
+            self.assertEqual(0, row.col)
+
+    def test_knuth_algorithm(self):
+        for i in range(100):
+            selected = knuth_algorithm(KnuthMatrix(init_rows(), init_cols()))
+            print(selected)
 
 
 if __name__ == '__main__':

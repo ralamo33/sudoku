@@ -66,7 +66,7 @@ class KnuthRow():
         box = ((math.floor(self.row / 3)) * 3) + math.floor(self.col / 3)
         return (self.CONSTRAINT_LENGTH * 3) + (box * 9) + (self.num - 1)
 
-    def get_id(self):
+    def get_header(self):
         """Return a unique identifier for this row."""
         Header = collections.namedtuple('header', "row col num")
         return Header(self.row, self.col, self.num)
@@ -81,12 +81,64 @@ class KnuthRow():
             image[knuth_col] = "1"
         return image
 
-class KnuthMatrix():
+
+def init_rows():
+    rows = dict()
+    for rb in RowGenerator():
+        rows.update({rb.get_header(): rb})
+    return rows
+
+
+def init_cols():
+    return [index for index in range(324)]
+
+
+class KnuthMatrix:
     """A matrix that converts a Sudoku board into an exact cover problem. This can be solved by Knuth's Algorithm."""
-    def __init__(self):
-        self.rows = dict()
-        for rb in RowGenerator():
-            self.rows.update({rb.get_id() : rb})
+    def __init__(self, rows, cols):
+        self.rows = rows
+        self.cols = cols
+
+    def __copy__(self):
+        return KnuthMatrix(self.rows, self.cols)
+
+    def is_empty(self):
+        return (len(self.rows) == 0) & (len(self.cols) == 0)
+
+    def failed(self):
+        return (len(self.rows) == 0) ^ (len(self.cols) == 0)
+
+    def select(self, header):
+        """Select the cell from the matrix and reduce the matrix appopriately.
+        :param matrix (dict): A matrix in a form solvable by Knuth Algorithm.
+        :param header (tuple): Indicator of which row in the matrix the selected cell belongs to.
+        """
+        actives = self.rows.get(header).knuth_cols
+        to_delete = []
+        for header, row in self.rows.items():
+            knuth_cols = row.knuth_cols
+            if knuth_cols[0] == actives[0] or knuth_cols[1] == actives[1] or knuth_cols[2] == actives[2] or knuth_cols[3] == actives[3]:
+                to_delete.append(header)
+        for key in to_delete:
+            del self.rows[key]
+        for active in actives:
+            self.cols.remove(active)
+
+    def get_random_col(self):
+        """Return the column number of a random column."""
+        return random.randrange(0, len(self.cols))
+
+    def get_active_rows(self, col):
+        """Get the rows that are activate at the given column.
+        :param col (int): The index of the column.
+        :return rows (List): A list of rows that are active at the given column"""
+        index = math.floor(col / 81)
+        actives = []
+        for header, row in self.rows.items():
+            if row.knuth_cols[index] == col:
+                actives.append(row)
+        return actives
+
 
     def display(self):
         image = []
@@ -104,40 +156,32 @@ class KnuthMatrix():
         f.close()
 
 
-def knuth_algorithm(selected = None, matrix = None):
+def knuth_algorithm(matrix, selected=[]):
     """Use knuth's algorithm to solve an exact cover problem.
-    :param already_selected (List): A list of cells that have already been selected.
-    :return selected_cells: The cells that were chosen to be activated."""
-    columns = [i for i in range(324)]
-    selected_column = columns[random.randrange(0, len(columns))]
-    rows = []
-    constraint = math.floor(selected_column / 81)
-    for row, actives in matrix.items():
-        if actives[constraint] == selected_column:
-            rows.append(row)
+    :param selected (List): A list of rows that have already been selected.
+    :param matrix (KnuthMatrix): A matrix designed for use by Knuth's Algroithm.
+    :return selected: The rows that were chosen to be activated."""
+    if matrix.is_empty():
+        return selected
+    if matrix.failed():
+        return None
+    col = matrix.get_random_col()
+    rows = matrix.get_active_rows(col)
     for row in rows:
-        select(matrix, row, columns)
-
-
-def select(matrix, cell, columns):
-    """Select the cell from the matrix and reduce the matrix appopriately.
-
-    :param matrix (dict): A matrix in a form solvable by Knuth Algorithm.
-    :param cell (tuple): Indicator of which row in the matrix the selected cell belongs to.
-    """
-    actives = matrix.get(cell)
-    for row in matrix:
-        other = matrix.get(row)
-        if other[0] == actives[0] or other[1] == actives[1] or other[2] == actives[2] or other[3] == actives[3]:
-            del matrix[row]
-    columns -= actives
-    return matrix
-
-        
+        print(row.get_header(), col)
+        new_matrix = matrix.__copy__()
+        new_matrix.select(row.get_header())
+        new_selected = selected.copy()
+        new_selected.append(row)
+        answer = knuth_algorithm(new_matrix, new_selected)
+        if answer is None:
+            continue
+        else:
+            return answer
 
 
 
 
 
 if __name__ == "__main__":
-    print(1 == True)
+    pass
