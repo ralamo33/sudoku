@@ -45,37 +45,37 @@ def build_knuth_row(row, col, number):
     
     :return building (List): A fully prepared row for Knuth's matrix.
     """
-    building = [0] * 384
-    row_column_constraints(building, row, col)
-    row_number_constraints(building, row, number)
-    column_number_constraints(building, col, number)
-    box_constraints(building, row, col, number)
-    return building
+    active = []
+    active.append(row_column_constraints(row, col))
+    active.append(row_number_constraints(row, number))
+    active.append(column_number_constraints(col, number))
+    active.append(box_constraints(row, col, number))
+    return active
 
     
-def row_column_constraints(building, row, col):
+def row_column_constraints(row, col):
     """Activate the appropriate row space for the row number column constraints of this object's row."""
     valid = row * 9 + col
-    building[valid] = 1
+    return valid
 
 
-def row_number_constraints(building, row, number):
+def row_number_constraints(row, number):
     """Activate the appropriate row space for the row column constraints of this object's row."""
     valid = CONSTRAINT_LENGTH + (number - 1) + (row * 9)
-    building[valid] = 1
+    return valid
 
 
-def column_number_constraints(building, col, number):
+def column_number_constraints(col, number):
     """Activate the appropriate row space for the column number constraints of this object's row."""
     valid = (CONSTRAINT_LENGTH * 2) + (number - 1) + col * 9
-    building[valid] = 1
+    return valid
 
 
-def box_constraints(building, row, col, number):
+def box_constraints(row, col, number):
     """Activate the appropriate row space for the box number constraints of this object's row."""
     box = ((math.floor(row / 3)) * 3) + math.floor(col / 3)
     valid = (CONSTRAINT_LENGTH * 3) + (box * 9) + (number - 1)
-    building[valid] = 1
+    return valid
 
 
 def build_knuth_matrix():
@@ -97,7 +97,11 @@ def display(matrix):
     """
     image = []
     for rb in matrix:
-        image.append(str(matrix[rb]))
+        row = [0] * 324
+        actives = matrix[rb]
+        for valid in actives:
+            row[valid] = 1
+        image.append(str(row))
     return "\n".join(image).replace(",", " |")
 
 
