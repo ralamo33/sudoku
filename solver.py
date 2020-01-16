@@ -1,10 +1,8 @@
 import math
 import random
+import collections
 
 """Solves a sudoku board using Knuth's Algorithm."""
-
-CONSTRAINT_LENGTH = 81
-
 
 class RowGenerator:
     """Iterates through the rows of the Knuth's Matrix.
@@ -34,89 +32,79 @@ class RowGenerator:
             self.row += 1
         else:
             raise StopIteration
-        key = (self.row, self.col, self.number)
-        return key, build_knuth_row(self.row, self.col, self.number)
+        return KnuthRow(self.row, self.col, self.number)
+
+class KnuthRow():
+    """A row of the Knuth matrix. Stores the header and active columns."""
+    CONSTRAINT_LENGTH = 81
+
+    def __init__(self, row, col, number):
+        self.row = row
+        self.col = col
+        self.num = number
+        self.knuth_cols = (self.row_column_constraints(), self.row_number_constraints(),
+                           self.column_number_constraints(), self.box_constraints())
+
+    def row_column_constraints(self):
+        """Return the knuth column activated by this row's row-number-column constraints
+        :return int"""
+        return self.row * 9 + self.col
+
+    def row_number_constraints(self):
+        """Return the knuth column activated by this row's row-number-column constraints
+        :return int"""
+        return self.CONSTRAINT_LENGTH + (self.num - 1) + (self.row * 9)
+
+    def column_number_constraints(self):
+        """Return the knuth column activated by this row's row-number-column constraints
+        :return int"""
+        return (self.CONSTRAINT_LENGTH * 2) + (self.num - 1) + self.col * 9
+
+    def box_constraints(self):
+        """Return the knuth column activated by this row's row-number-column constraints
+        :return int"""
+        box = ((math.floor(self.row / 3)) * 3) + math.floor(self.col / 3)
+        return (self.CONSTRAINT_LENGTH * 3) + (box * 9) + (self.num - 1)
+
+    def get_id(self):
+        """Return a unique identifier for this row."""
+        Header = collections.namedtuple('header', "row col num")
+        return Header(self.row, self.col, self.num)
 
 
-def build_knuth_row(row, col, number):
-    """Create a row for the Knuth Matrix.
-    :param row (int): The row on the Sudoku board to be represented.
-    :param col (int): The column on the Sudoku board to be represented.
-    :param number (int): The number on the Sudoku board to be represented.
-    
-    :return building (List): A fully prepared row for Knuth's matrix.
-    """
-    active = []
-    active.append(row_column_constraints(row, col))
-    active.append(row_number_constraints(row, number))
-    active.append(column_number_constraints(col, number))
-    active.append(box_constraints(row, col, number))
-    return active
+    def display(self):
+        """Turn this into a String.
+        :return image (String): This as a string.
+        """
+        image = [" "] * (self.CONSTRAINT_LENGTH * 4)
+        for knuth_col in self.knuth_cols:
+            image[knuth_col] = "1"
+        return image
 
-    
-def row_column_constraints(row, col):
-    """Activate the appropriate row space for the row number column constraints of this object's row."""
-    valid = row * 9 + col
-    return valid
+class KnuthMatrix():
+    """A matrix that converts a Sudoku board into an exact cover problem. This can be solved by Knuth's Algorithm."""
+    def __init__(self):
+        self.rows = dict()
+        for rb in RowGenerator():
+            self.rows.update({rb.get_id() : rb})
 
+    def display(self):
+        image = []
+        for header, row in self.matrix.items():
+            image.append(row.display())
+        return "\n".join(image)
 
-def row_number_constraints(row, number):
-    """Activate the appropriate row space for the row column constraints of this object's row."""
-    valid = CONSTRAINT_LENGTH + (number - 1) + (row * 9)
-    return valid
-
-
-def column_number_constraints(col, number):
-    """Activate the appropriate row space for the column number constraints of this object's row."""
-    valid = (CONSTRAINT_LENGTH * 2) + (number - 1) + col * 9
-    return valid
+    def write(self, file):
+        """Write the matrix to the file.
+        :param matrix (dict): A sudoku board as a matrix in exact cover problem format.
+        :param file (String): A string representing the file path to the target file.
+        """
+        f = open(file, "w")
+        f.write(self.display)
+        f.close()
 
 
-def box_constraints(row, col, number):
-    """Activate the appropriate row space for the box number constraints of this object's row."""
-    box = ((math.floor(row / 3)) * 3) + math.floor(col / 3)
-    valid = (CONSTRAINT_LENGTH * 3) + (box * 9) + (number - 1)
-    return valid
-
-
-def build_knuth_matrix():
-    """Create a Sudoku board converted into an exact cover problem solvable by Knuth's Algorithm.
-    
-    :return matrix (dict): A sudoku board as a matrix in exact cover problem format.
-    """
-    matrix = dict()
-    for rb in RowGenerator():
-        matrix.update({rb[0] : rb[1]})
-    return matrix
-
-
-def display(matrix):
-    """Display the given knuth_matrix
-    :param matrix (dict): A sudoku board as a matrix in exact cover problem format.
-
-    :return image (String): A string representing the matrix.
-    """
-    image = []
-    for rb in matrix:
-        row = [0] * 324
-        actives = matrix[rb]
-        for valid in actives:
-            row[valid] = 1
-        image.append(str(row))
-    return "\n".join(image).replace(",", " |")
-
-
-def write(matrix, file):
-    """Write the matrix to the file.
-    :param matrix (dict): A sudoku board as a matrix in exact cover problem format.
-    :param file (String): A string representing the file path to the target file.
-    """
-    f = open(file, "w")
-    f.write(display(matrix))
-    f.close()
-
-
-def knuth_algorithm(selected = None, matrix = build_knuth_matrix()):
+def knuth_algorithm(selected = None, matrix = None):
     """Use knuth's algorithm to solve an exact cover problem.
     :param already_selected (List): A list of cells that have already been selected.
     :return selected_cells: The cells that were chosen to be activated."""
@@ -129,11 +117,6 @@ def knuth_algorithm(selected = None, matrix = build_knuth_matrix()):
             rows.append(row)
     for row in rows:
         select(matrix, row, columns)
-
-
-
-
-
 
 
 def select(matrix, cell, columns):
