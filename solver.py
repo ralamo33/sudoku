@@ -1,4 +1,5 @@
 import math
+import random
 
 """Solves a sudoku board using Knuth's Algorithm."""
 
@@ -115,25 +116,43 @@ def write(matrix, file):
     f.close()
 
 
-def knuth_algorithm(already_selected = None, matrix = build_knuth_matrix()):
+def knuth_algorithm(selected = None, matrix = build_knuth_matrix()):
     """Use knuth's algorithm to solve an exact cover problem.
-    :param matrix: (dict): A matrix in a form solvable by this algortihm.
     :param already_selected (List): A list of cells that have already been selected.
     :return selected_cells: The cells that were chosen to be activated."""
-    for cell in already_selected:
-        select(matrix, cell)
+    columns = [i for i in range(324)]
+    selected_column = columns[random.randrange(0, len(columns))]
+    rows = []
+    constraint = math.floor(selected_column / 81)
+    for row, actives in matrix.items():
+        if actives[constraint] == selected_column:
+            rows.append(row)
+    for row in rows:
+        select(matrix, row, columns)
 
-def select(matrix, cell):
+
+
+
+
+
+
+def select(matrix, cell, columns):
     """Select the cell from the matrix and reduce the matrix appopriately.
 
     :param matrix (dict): A matrix in a form solvable by Knuth Algorithm.
     :param cell (tuple): Indicator of which row in the matrix the selected cell belongs to.
     """
-    row = matrix.get(cell)
-    active = []
-    for index, value in enumerate(row):
-        if value:
-            active.append(index)
+    actives = matrix.get(cell)
+    for row in matrix:
+        other = matrix.get(row)
+        if other[0] == actives[0] or other[1] == actives[1] or other[2] == actives[2] or other[3] == actives[3]:
+            del matrix[row]
+    columns -= actives
+    return matrix
+
+        
+
+
 
 
 

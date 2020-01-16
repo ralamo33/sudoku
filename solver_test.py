@@ -1,5 +1,6 @@
 import unittest
 from solver import *
+from _collections import defaultdict
 
 
 def find_actives(row, col, number):
@@ -31,9 +32,18 @@ class MyTestCase(unittest.TestCase):
             row_builders.append(rb)
         self.assertEqual(729, len(row_builders))
 
-    def test_matrix(self):
+    def test_matrix_(self):
+        """Testing that each column of the matrix is active in 9 rows.
+        This is how the matrix of a 3 X 3 sudoku board should be."""
         matrix = build_knuth_matrix()
-        write(matrix, "KnuthMatrix")
+        column_activations = defaultdict(int)
+        for k, v in matrix.items():
+            for column in v:
+                column_activations[column] += 1
+        for k, v in column_activations.items():
+            self.assertEqual(9, v)
+
+
 
 if __name__ == '__main__':
     unittest.main()
