@@ -74,7 +74,7 @@ class MyTestCase(unittest.TestCase):
         self.solve_matrix(matrix, 3, 1)
         self.solve_matrix(matrix, 6, 2)
         self.solve_matrix(matrix, 9, 3)
-        self.assertTrue(matrix.is_empty())
+        self.assertTrue(matrix.solved())
         self.assertFalse(matrix.failed())
 
     def solve_matrix(self, matrix, row_limit, num):
