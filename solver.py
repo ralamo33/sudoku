@@ -82,7 +82,7 @@ class KnuthRow():
         image = [" "] * (self.CONSTRAINT_LENGTH * 4)
         for knuth_col in self.knuth_cols:
             image[knuth_col] = "1"
-        return image
+        return "".join(image)
 
 
 def init_rows():
@@ -108,7 +108,7 @@ class KnuthMatrix:
             new_rows.update({header:row.__copy__()})
         return KnuthMatrix(new_rows, self.cols.copy())
 
-    def is_empty(self):
+    def solved(self):
         return (len(self.rows) == 0) & (len(self.cols) == 0)
 
     def failed(self):
@@ -131,8 +131,16 @@ class KnuthMatrix:
             self.cols.remove(active)
 
     def get_random_col(self):
-        """Return the column number of a random column."""
-        return random.randrange(0, len(self.cols))
+        best_columns = []
+        min_rows = 100
+        for col in self.cols:
+            active_rows = len(self.get_active_rows(col))
+            if active_rows < min_rows:
+                min_rows = active_rows
+                best_columns.append(col)
+            elif active_rows == min_rows:
+                best_columns.append(col)
+        return best_columns[random.randrange(0, len(best_columns))]
 
     def get_active_rows(self, col):
         """Get the rows that are activate at the given column.
@@ -148,7 +156,7 @@ class KnuthMatrix:
 
     def display(self):
         image = []
-        for header, row in self.matrix.items():
+        for header, row in self.rows.items():
             image.append(row.display())
         return "\n".join(image)
 
@@ -158,7 +166,7 @@ class KnuthMatrix:
         :param file (String): A string representing the file path to the target file.
         """
         f = open(file, "w")
-        f.write(self.display)
+        f.write(self.display())
         f.close()
 
 
@@ -167,17 +175,17 @@ def knuth_algorithm(matrix, selected=[]):
     :param selected (List): A list of rows that have already been selected.
     :param matrix (KnuthMatrix): A matrix designed for use by Knuth's Algroithm.
     :return selected: The rows that were chosen to be activated."""
-    if matrix.is_empty():
+    if matrix.solved():
         return selected
     if matrix.failed():
+        print("Failed!")
         return None
     col = matrix.get_random_col()
     rows = matrix.get_active_rows(col)
     for row in rows:
-        print(row.get_header(), col)
         new_matrix = matrix.__copy__()
-        new_matrix.select(row.get_header())
         new_selected = selected.copy()
+        new_matrix.select(row.get_header())
         new_selected.append(row)
         answer = knuth_algorithm(new_matrix, new_selected)
         if answer is None:
@@ -190,4 +198,4 @@ def knuth_algorithm(matrix, selected=[]):
 
 
 if __name__ == "__main__":
-    pass
+    print((math.ceil(8 / 3)) * 3)

@@ -39,7 +39,6 @@ class MyTestCase(unittest.TestCase):
             self.assertEqual(0, row.col)
 
     def test_knuth_algorithm(self):
-        for i in range(100):
             selected = knuth_algorithm(KnuthMatrix(init_rows(), init_cols()))
             print(selected)
 
@@ -50,25 +49,57 @@ class MyTestCase(unittest.TestCase):
         original.num = 8
         self.assertNotEqual(original.get_header(), new.get_header())
 
-    def test_matrix_select(self):
+    def test_matrix_select(self, header=(6, 3, 3)):
         matrix = KnuthMatrix(init_rows(), init_cols())
-        matrix.select((0, 0, 5))
+        row = matrix.rows[header]
+        knuth_cols = row.knuth_cols
+        matrix.select(header)
         cols = matrix.cols
         self.assertEqual(len(cols), 320)
-        self.assertTrue(0 not in cols)
-        self.assertTrue(85 not in cols)
-        self.assertTrue(166 not in cols)
-        self.assertTrue(247 not in cols)
+        for c in knuth_cols:
+            self.assertTrue(c not in cols)
         rows = matrix.rows
-        for i in range(8):
-            self.assertTrue((0, 0, i) not in rows)
-            self.assertTrue((i, 0, 5) not in rows)
-            self.assertTrue((0, i, 5) not in rows)
-        for i in range (3):
-            for j in range(3):
-                self.assertTrue((i, j, 5) not in rows)
+        for i in range(9):
+            self.assertTrue((header[0], header[1], i) not in rows)
+            self.assertTrue((i, header[1], header[2]) not in rows)
+            self.assertTrue((header[0], i, header[2]) not in rows)
+        row_min = (math.floor(header[0] / 3) * 3)
+        col_min = math.floor(header[1] / 3) * 3
+        for row in range(row_min, row_min + 3):
+            for col in range(col_min, col_min + 3):
+                self.assertTrue((row, col, header[2]) not in rows)
 
+    def test_matrix_solved(self):
+        matrix = KnuthMatrix(init_rows(), init_cols())
+        self.solve_matrix(matrix, 3, 1)
+        self.solve_matrix(matrix, 6, 2)
+        self.solve_matrix(matrix, 9, 3)
+        self.assertTrue(matrix.is_empty())
+        self.assertFalse(matrix.failed())
 
+    def solve_matrix(self, matrix, row_limit, num):
+        for row in range((row_limit - 3), row_limit):
+            col_num = num
+            for col in range(9):
+                print(row, col, col_num)
+                matrix.select((row, col, col_num))
+                col_num = (col_num % 9) + 1
+            num += 3
+
+    #Commented out because it takes 45seconds to run. This did pass.
+    """    def test_matrix_select_full(self):
+        for row in range(9):
+            for col in range(9):
+                for num in range(1, 10):
+                    self.test_matrix_select((row, col, num))"""""
+
+    def test_matrix_copy(self):
+        original = KnuthMatrix(init_rows(), init_cols())
+        original.select((4, 4, 4))
+        copy = original.__copy__()
+        self.assertEqual(original.rows.keys(), copy.rows.keys())
+        copy.select((2, 1, 8))
+        self.assertNotEqual(original.rows.keys, copy.rows.keys())
 
 
 
