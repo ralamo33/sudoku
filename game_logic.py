@@ -1,6 +1,7 @@
 import random
 import math
 import unittest
+import solver
 
 """The logic behind running a game of sudoku."""
 
@@ -8,8 +9,8 @@ import unittest
 class Tile:
     """A single tile of a Sukdou board"""
 
-    def __init__(self):
-        self.num = -1
+    def __init__(self, num=-1):
+        self.num = num
 
     def assign_number(self, num):
         if not isinstance(num, int):
@@ -40,6 +41,17 @@ def initialize_board():
             row.append(Tile())
         board.append(row)
     return board
+
+def solve_board(board):
+    """Solve the Sudoku board for the user.
+    :param board (List of Tile): The Sudoku board.
+    """
+    rows = solver.knuth_algorithm(solver.KnuthMatrix(solver.init_rows(), solver.init_cols()))
+    for row in rows:
+        cell = row.get_header()
+        board[cell[0]][cell[1]].assign_number(cell[2])
+    return display(board)
+
 
 
 def ready_board(board, reveal=10):
@@ -156,8 +168,5 @@ def display(board):
     image = "\n".join(r)
     return image
 
-
 if __name__ == "__main__":
-   board = initialize_board()
-   ready_board(board)
-   print(display(board))
+   print(solve_board(initialize_board()))
