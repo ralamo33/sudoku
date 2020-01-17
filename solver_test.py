@@ -43,6 +43,34 @@ class MyTestCase(unittest.TestCase):
             selected = knuth_algorithm(KnuthMatrix(init_rows(), init_cols()))
             print(selected)
 
+    def test_copy(self):
+        original = KnuthRow(1, 1, 5)
+        new = original.__copy__()
+        self.assertEqual(original.get_header(), new.get_header())
+        original.num = 8
+        self.assertNotEqual(original.get_header(), new.get_header())
+
+    def test_matrix_select(self):
+        matrix = KnuthMatrix(init_rows(), init_cols())
+        matrix.select((0, 0, 5))
+        cols = matrix.cols
+        self.assertEqual(len(cols), 320)
+        self.assertTrue(0 not in cols)
+        self.assertTrue(85 not in cols)
+        self.assertTrue(166 not in cols)
+        self.assertTrue(247 not in cols)
+        rows = matrix.rows
+        for i in range(8):
+            self.assertTrue((0, 0, i) not in rows)
+            self.assertTrue((i, 0, 5) not in rows)
+            self.assertTrue((0, i, 5) not in rows)
+        for i in range (3):
+            for j in range(3):
+                self.assertTrue((i, j, 5) not in rows)
+
+
+
+
 
 if __name__ == '__main__':
     unittest.main()

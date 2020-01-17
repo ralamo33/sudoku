@@ -45,6 +45,9 @@ class KnuthRow():
         self.knuth_cols = (self.row_column_constraints(), self.row_number_constraints(),
                            self.column_number_constraints(), self.box_constraints())
 
+    def __copy__(self):
+        return KnuthRow(self.row, self.col, self.num)
+
     def row_column_constraints(self):
         """Return the knuth column activated by this row's row-number-column constraints
         :return int"""
@@ -100,7 +103,10 @@ class KnuthMatrix:
         self.cols = cols
 
     def __copy__(self):
-        return KnuthMatrix(self.rows, self.cols)
+        new_rows = dict()
+        for header, row in self.rows.items():
+            new_rows.update({header:row.__copy__()})
+        return KnuthMatrix(new_rows, self.cols.copy())
 
     def is_empty(self):
         return (len(self.rows) == 0) & (len(self.cols) == 0)
@@ -136,7 +142,7 @@ class KnuthMatrix:
         actives = []
         for header, row in self.rows.items():
             if row.knuth_cols[index] == col:
-                actives.append(row)
+                actives.append(row.__copy__())
         return actives
 
 
