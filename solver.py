@@ -162,23 +162,25 @@ class KnuthMatrix:
                 best_columns.append(col)
         return best_columns[random.randrange(0, len(best_columns))]
 
-    def select(self, row, col):
+    def select(self, row, chosen_col):
         """Select the cell from the matrix and reduce the matrix appopriately."""
         to_delete_cols = row.knuth_cols
         to_delete_rows = []
         for col in to_delete_cols:
             for row in col.knuth_rows:
                 to_delete_rows.append(row)
-                self.remove_row(row)
             self.cols.pop(col.index, None)
-        self.selected.append(Removed((row,col), to_delete_rows, to_delete_cols))
+        self.remove_row(to_delete_rows)
+        self.selected.append(Removed((row, chosen_col), to_delete_rows, to_delete_cols))
 
-    def remove_row(self, row):
+    def remove_row(self, rows):
         """Remove the given row from this Matrix."""
-        del self.rows[row.get_header()]
-        #ToDO: Consider giving rows and cols booleans for whether they are in the matrix.
-        for col in row.knuth_cols:
-            col.knuth_rows.remove(row)
+        for row in rows:
+            self.rows.pop(row.get_header(), None)
+            #ToDO: Consider giving rows and cols booleans for whether they are in the matrix.
+            for col in row.knuth_cols:
+                if row in self.rows:
+                    col.knuth_rows.remove(row)
 
     def add_row(self, row):
         self.rows.update({row.get_header(): row})
