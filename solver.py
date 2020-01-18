@@ -3,107 +3,202 @@ import math
 import random
 """Solves a sudoku board using Knuth's Algorithm."""
 
-class RowGenerator:
-    """Iterates through the rows of the Knuth's Matrix.
-    Specifically, next generates a header and row pair.
-    """
+class SudokuMatrix():
+    """A matrix representing the Sudoku board as an exact cover problem."""
 
-    def __init__(self):
-        self.row = 0
-        self.col = 0
-        self.number = 0
-        self.number_limit = 9
-        self.row_limit = 8
-        self.col_limit = 8
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        if self.number < self.number_limit:
-            self.number += 1
-        elif self.col < self.col_limit:
-            self.number = 1
-            self.col += 1
-        elif self.row < self.row_limit:
-            self.number = 1
-            self.col = 0
-            self.row += 1
-        else:
-            raise StopIteration
-        return KnuthRow(self.row, self.col, self.number)
-
-class KnuthRow():
-    """A row of the Knuth matrix. Stores the header and active columns."""
-    CONSTRAINT_LENGTH = 81
-
-    def __init__(self, row, col, number, knuth_cols=[]):
-        self.row = row
-        self.col = col
-        self.num = number
-        self.knuth_cols = []
-
-    def update_knuth_cols(self, knuth_col):
-        """Add a column from the KnuthMatrix to this.
-        :param knuth_col (KnuthCol): A column for which this row is active.
+    def __init__(self, submatrix_size=3):
         """
-        self.knuth_cols.append(knuth_col)
+        :param submatrix_size: The size of a box in the Sudoku board. This is 3 for a standard game.
+        """
+        self.submatrix = submatrix_size
+        #Size of a side of the Sudoku puzzle
+        self.size = submatrix_size ** 2
+        self.constraint_length = self.size ** 2
+        self.rows = self.size ** 3
+        self.cols = (self.size ** 2) * 4
+        self.grid = []
+        for row in range(self.rows):
+            self.grid.append([0] * self.cols)
+            self.get_constraints(row)
 
-    def get_constraints(self):
+    def get_constraints(self, index):
         """Return the indices of the KnuthColumns active in this."""
-        return (self.row_column_constraints(), self.row_number_constraints(),
-                self.column_number_constraints(), self.box_constraints())
+        row = math.floor(index / (self.size ** 2))
+        col = math.floor((index % (self.size ** 2)) / self.size)
+        num = index % self.size + 1
+        self.grid[index][self._cell_constraints(row, col)] = 1
+        self.grid[index][self._row_constraints(row, num)] = 1
+        self.grid[index][self._column_constraints(col, num)] = 1
+        self.grid[index][self._submatrix_constraints(row, col, num)] = 1
 
-    def row_column_constraints(self):
+    def _cell_constraints(self, row, col):
         """Return the knuth column activated by this row's row-number-column constraints
         :return int"""
-        return self.row * 9 + self.col
+        return row * self.size + col
 
-    def row_number_constraints(self):
+    def _row_constraints(self, row, num):
         """Return the knuth column activated by this row's row-number-column constraints
         :return int"""
-        return self.CONSTRAINT_LENGTH + (self.num - 1) + (self.row * 9)
+        return self.constraint_length + (num - 1) + (row * self.size)
 
-    def column_number_constraints(self):
+    def _column_constraints(self, col, num):
         """Return the knuth column activated by this row's row-number-column constraints
         :return int"""
-        return (self.CONSTRAINT_LENGTH * 2) + (self.num - 1) + self.col * 9
+        return (self.constraint_length * 2) + (num - 1) + col * self.size
 
-    def box_constraints(self):
+    def _submatrix_constraints(self, row, col, num):
         """Return the knuth column activated by this row's row-number-column constraints
         :return int"""
-        box = ((math.floor(self.row / 3)) * 3) + math.floor(self.col / 3)
-        return (self.CONSTRAINT_LENGTH * 3) + (box * 9) + (self.num - 1)
-
-    def get_header(self):
-        """Return a unique identifier for this row."""
-        Header = collections.namedtuple('Relation', "row col num")
-        return Header(self.row, self.col, self.num)
+        box = ((math.floor(row / self.submatrix)) * self.submatrix) + math.floor(col / self.submatrix)
+        return (self.constraint_length * self.submatrix) + (box * self.size) + (num - 1)
 
     def display(self):
-        """Turn this into a String.
-        :return image (String): This as a string.
-        """
-        image = [" "] * (self.CONSTRAINT_LENGTH * 4)
-        for knuth_col in self.knuth_cols:
-            image[knuth_col] = "1"
-        return "".join(image)
+        image = []
+        for row in self.grid:
+            row_image = []
+            for cell in row:
+                if cell == 0:
+                    row_image.append(" ")
+                else:
+                    row_image.append(str(cell))
+            image.append(" ".join(row_image))
+        return "\n".join(image)
 
-class KnuthColumn:
-    """A column of the Knuth matrix. Represents a single constraint in the Sudoku puzzle."""
+
+class DancingNode:
+    """A quadrably linked node."""
+    def __init__(self, index=0):
+        self.left = self.right = self.bottom = self.top = self
+        self.index = index
+
+
+
+    def link_top(self, top):
+        top.bottom = self
+        top.top = self.top
+        self.top.bottom = top
+        self.top = top
+        
+    def link_bottom(self, bottom):
+        bottom.top = self
+        bottom.bottom = self.bottom
+        self.bottom.top = bottom
+        self.bottom = bottom
+        
+    def link_left(self, left):
+        left.right = self
+        left.left = self.left
+        self.left.right = left
+        self.left = left
+        
+    def link_right(self, right):
+        right.left = self
+        right.right = self.right
+        self.right.left = right
+        self.right = right
+
+    def remove_horizontal(self):
+        self.left.right = self.right
+        self.right.left = self.left
+
+    def remove_vertical(self):
+        self.top.bottom = self.bottom
+        self.bottom.top = self.top
+
+    def restore_horizontal(self):
+        self.left.right = self
+        self.right.left = self
+
+    def restore_vertical(self):
+        self.top.bottom = self
+        self.bottom.top = self
+
+
+class DancingColumn:
     def __init__(self, index):
         self.index = index
-        self.knuth_rows = []
+        self.size = 0
+        self.dancing_link = DancingNode()
+        self.tried = []
 
-    def update_knuth_rows(self, knuth_row):
-        """Add a KnuthRow to the list of knuth rows this column is activated on.
-        :parameter knuth_row (KnuthRow): A row of the KnuthMatrix this is active on.
+    def link_bottom(self, node):
+        self.dancing_link.link_bottom(node)
+        self.size += 1
+
+    def link_top(self, node):
+        self.dancing_link.link_top(node)
+
+    def link_right(self, node):
+        self.dancing_link.link_right(node)
+
+    def link_left(self, node):
+        self.dancing_link.link_left(node)
+
+    def remove(self):
+        """Remove this column from the dancing matrix."""
+        self.dancing_link.remove_horizontal()
+        below = self.dancing_link.bottom
+        while below is not self:
+            below.remove_horizontal()
+            below = below.bottom
+
+    def restore(self):
+        """Restore this colun back into the dancing matrix."""
+        self.dancing_link
+
+
+
+class LinkedMatrix:
+    """A matrix of dancing links representing a Sodou board converted into an exact cover problem."""
+    def __init__(self, size=9):
         """
-        if knuth_row not in self.knuth_rows:
-            self.knuth_rows.append(knuth_row)
+        :param size: The size of a side of the Soduku board.
+        """
+        self.size = size
+        self.submatrix = math.sqrt(self.size)
+        self.constraint_length = self.size ** 2
+        self.header = DancingNode()
+        self.cols = [self.header]
+        for i in range(1, ((size ** 2) * 4) + 1):
+            col = DancingColumn(i)
+            self.cols[-1].link_right(col)
+            self.cols.append(col)
+        for i in range(size ** 3):
+            node = DancingNode(i)
+        for constraint in self.get_constraints(i):
+            self.cols[constraint].link_bottom(node)
 
 
-Removed = collections.namedtuple("Removed", "chosen_pair rows cols")
+    def get_constraints(self, index):
+        """Return the indices of the KnuthColumns active in this."""
+        row = math.floor(index / (self.size ** 2))
+        col = math.floor((index % (self.size ** 2)) / self.size)
+        num = index % self.size + 1
+        return (self._cell_constraints(row, col), self._row_constraints(row, num),
+               self._column_constraints(col, num), self._submatrix_constraints(row, col, num))
+
+    def _cell_constraints(self, row, col):
+        """Return the knuth column activated by this row's row-number-column constraints
+        :return int"""
+        return row * self.size + col + 1
+
+    def _row_constraints(self, row, num):
+        """Return the knuth column activated by this row's row-number-column constraints
+        :return int"""
+        return self.constraint_length + num + (row * self.size)
+
+    def _column_constraints(self, col, num):
+        """Return the knuth column activated by this row's row-number-column constraints
+        :return int"""
+        return (self.constraint_length * 2) + num + col * self.size
+
+    def _submatrix_constraints(self, row, col, num):
+        """Return the knuth column activated by this row's row-number-column constraints
+        :return int"""
+        box = ((math.floor(row / self.submatrix)) * self.submatrix) + math.floor(col / self.submatrix)
+        return int((self.constraint_length * self.submatrix) + (box * self.size) + num)
+
+
 
 
 class KnuthMatrix:
