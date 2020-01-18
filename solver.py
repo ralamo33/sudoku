@@ -1,7 +1,6 @@
+import collections
 import math
 import random
-import collections
-
 """Solves a sudoku board using Knuth's Algorithm."""
 
 class RowGenerator:
@@ -38,15 +37,22 @@ class KnuthRow():
     """A row of the Knuth matrix. Stores the header and active columns."""
     CONSTRAINT_LENGTH = 81
 
-    def __init__(self, row, col, number):
+    def __init__(self, row, col, number, knuth_cols=[]):
         self.row = row
         self.col = col
         self.num = number
-        self.knuth_cols = (self.row_column_constraints(), self.row_number_constraints(),
-                           self.column_number_constraints(), self.box_constraints())
+        self.knuth_cols = []
 
-    def __copy__(self):
-        return KnuthRow(self.row, self.col, self.num)
+    def update_knuth_cols(self, knuth_col):
+        """Add a column from the KnuthMatrix to this.
+        :param knuth_col (KnuthCol): A column for which this row is active.
+        """
+        self.knuth_cols.append(knuth_col)
+
+    def get_constraints(self):
+        """Return the indices of the KnuthColumns active in this."""
+        return (self.row_column_constraints(), self.row_number_constraints(),
+                self.column_number_constraints(), self.box_constraints())
 
     def row_column_constraints(self):
         """Return the knuth column activated by this row's row-number-column constraints
@@ -71,9 +77,8 @@ class KnuthRow():
 
     def get_header(self):
         """Return a unique identifier for this row."""
-        Header = collections.namedtuple('header', "row col num")
+        Header = collections.namedtuple('Relation', "row col num")
         return Header(self.row, self.col, self.num)
-
 
     def display(self):
         """Turn this into a String.
@@ -84,57 +89,72 @@ class KnuthRow():
             image[knuth_col] = "1"
         return "".join(image)
 
+class KnuthColumn:
+    """A column of the Knuth matrix. Represents a single constraint in the Sudoku puzzle."""
+    def __init__(self, index):
+        self.index = index
+        self.knuth_rows = []
 
-def init_rows():
-    rows = dict()
-    for rb in RowGenerator():
-        rows.update({rb.get_header(): rb})
-    return rows
+    def update_knuth_rows(self, knuth_row):
+        """Add a KnuthRow to the list of knuth rows this column is activated on.
+        :parameter knuth_row (KnuthRow): A row of the KnuthMatrix this is active on.
+        """
+        if knuth_row not in self.knuth_rows:
+            self.knuth_rows.append(knuth_row)
 
 
-def init_cols():
-    return [index for index in range(324)]
+Removed = collections.namedtuple("Removed", "chosen_pair rows cols")
 
 
 class KnuthMatrix:
-    """A matrix that converts a Sudoku board into an exact cover problem. This can be solved by Knuth's Algorithm."""
-    def __init__(self, rows, cols):
-        self.rows = rows
-        self.cols = cols
+    """A matrix representing a Sudoku board converted into an exact cover problem.
+    Each column represents a constraint that needs to be met to solve the puzzle.
+    """
+    def __init__(self):
+        """
+        :param rows: (List of KnuthRow):Each row represents a specific number placed on a specific Sudoku tile.
+        :param cols: (List of KnuthCol):Each column represents a constraint that needs to be met to solve the puzzle.
+        """
+        #ToDo: Test that this results in each row being attached to appropriate cols, and vice versa
+        self.cols = dict()
+        #ToDo: Create a second dictionary that holds columns by their number of rows.
+        for index in range(324):
+            self.cols.update({index: KnuthColumn(index)})
+        self.rows = dict()
+        for rb in RowGenerator():
+            self.rows.update({rb.get_header(): rb})
+            for index in rb.get_constraints():
+                chosen_col = self.cols[index]
+                rb.update_knuth_cols(chosen_col)
+                chosen_col.update_knuth_rows(rb)
+        #ToDo: Try replacing this list for a stack.
+        self.selected = []
+        #Rows that caused failure when selected.
+        self.wrong = []
 
-    def __copy__(self):
-        new_rows = dict()
-        for header, row in self.rows.items():
-            new_rows.update({header:row.__copy__()})
-        return KnuthMatrix(new_rows, self.cols.copy())
+    def knuth_algorithm(self):
+        """Use knuth's algorithm to solve the exact cover problem represented by self."""
+        while not self.solved():
+            print(len(self.rows), len(self.cols))
+            chosen_col = self.get_rand_col()
+            #ToDo: Replace with something more efficien
+            rows = [row for row in chosen_col.knuth_rows if row not in self.wrong]
+            if len(rows) == 0:
+                self.backtrack()
+                continue
+            chosen_row = rows[random.randrange(len(rows))]
+            self.select(chosen_row, chosen_col)
 
     def solved(self):
-        return (len(self.rows) == 0) & (len(self.cols) == 0)
+        """Has this Sudoku puzzle been solved?"""
+        return len(self.cols) == 0 & len(self.rows) == 0
 
-    def failed(self):
-        return (len(self.rows) == 0) ^ (len(self.cols) == 0)
-
-    def select(self, header):
-        """Select the cell from the matrix and reduce the matrix appopriately.
-        :param matrix (dict): A matrix in a form solvable by Knuth Algorithm.
-        :param header (tuple): Indicator of which row in the matrix the selected cell belongs to.
-        """
-        actives = self.rows.get(header).knuth_cols
-        to_delete = []
-        for header, row in self.rows.items():
-            knuth_cols = row.knuth_cols
-            if knuth_cols[0] == actives[0] or knuth_cols[1] == actives[1] or knuth_cols[2] == actives[2] or knuth_cols[3] == actives[3]:
-                to_delete.append(header)
-        for key in to_delete:
-            del self.rows[key]
-        for active in actives:
-            self.cols.remove(active)
-
-    def get_random_col(self):
+    def get_rand_col(self):
+        #Todo: Store columns in a dict with the number of active rows as the key.
         best_columns = []
         min_rows = 100
-        for col in self.cols:
-            active_rows = len(self.get_active_rows(col))
+        for index, col in self.cols.items():
+            active_rows = len(col.knuth_rows)
             if active_rows < min_rows:
                 min_rows = active_rows
                 best_columns.append(col)
@@ -142,60 +162,39 @@ class KnuthMatrix:
                 best_columns.append(col)
         return best_columns[random.randrange(0, len(best_columns))]
 
-    def get_active_rows(self, col):
-        """Get the rows that are activate at the given column.
-        :param col (int): The index of the column.
-        :return rows (List): A list of rows that are active at the given column"""
-        index = math.floor(col / 81)
-        actives = []
-        for header, row in self.rows.items():
-            if row.knuth_cols[index] == col:
-                actives.append(row.__copy__())
-        return actives
+    def select(self, row, chosen_col):
+        """Select the cell from the matrix and reduce the matrix appopriately."""
+        to_delete_cols = row.knuth_cols
+        to_delete_rows = []
+        for col in to_delete_cols:
+            for row in col.knuth_rows:
+                to_delete_rows.append(row)
+            self.cols.pop(col.index, None)
+        self.remove_row(to_delete_rows)
+        self.selected.append(Removed((row, chosen_col), to_delete_rows, to_delete_cols))
 
+    def remove_row(self, rows):
+        """Remove the given row from this Matrix."""
+        for row in rows:
+            self.rows.pop(row.get_header(), None)
+            #ToDO: Consider giving rows and cols booleans for whether they are in the matrix.
+            for col in row.knuth_cols:
+                if row in self.rows:
+                    col.knuth_rows.remove(row)
 
-    def display(self):
-        image = []
-        for header, row in self.rows.items():
-            image.append(row.display())
-        return "\n".join(image)
+    def add_row(self, row):
+        self.rows.update({row.get_header(): row})
+        for col in row.knuth_cols:
+            col.knuth_rows.append(row)
 
-    def write(self, file):
-        """Write the matrix to the file.
-        :param matrix (dict): A sudoku board as a matrix in exact cover problem format.
-        :param file (String): A string representing the file path to the target file.
-        """
-        f = open(file, "w")
-        f.write(self.display())
-        f.close()
-
-
-def knuth_algorithm(matrix, selected=[]):
-    """Use knuth's algorithm to solve an exact cover problem.
-    :param selected (List): A list of rows that have already been selected.
-    :param matrix (KnuthMatrix): A matrix designed for use by Knuth's Algroithm.
-    :return selected: The rows that were chosen to be activated."""
-    if matrix.solved():
-        return selected
-    if matrix.failed():
-        print("Failed!")
-        return None
-    col = matrix.get_random_col()
-    rows = matrix.get_active_rows(col)
-    for row in rows:
-        new_matrix = matrix.__copy__()
-        new_selected = selected.copy()
-        new_matrix.select(row.get_header())
-        new_selected.append(row)
-        answer = knuth_algorithm(new_matrix, new_selected)
-        if answer is None:
-            continue
-        else:
-            return answer
-
-
-
-
+    def backtrack(self):
+        """Reverse the previous move after a failure."""
+        last_move = self.selected.pop()
+        self.wrong.append(last_move.chosen_pair)
+        for col in last_move.cols:
+            self.cols.update({col.index: col})
+        for row in last_move.rows:
+            self.add_row(row)
 
 if __name__ == "__main__":
-    print((math.ceil(8 / 3)) * 3)
+    KnuthMatrix().knuth_algorithm()
