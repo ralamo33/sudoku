@@ -185,30 +185,44 @@ class LinkedMatrix:
 
     def knuth_algorithm(self):
         sizes = []
+        count = 0
         while self.header.right is not self.header:
-            col = self.choose_column()
+            """if self.invalid():
+                print("INVALID BACKTRACK")
+                self.backtrack()"""
+            count += 1
+            col = self.random_column()
             row = col.get_row()
-            if row is not col.bottom:
-                print("Special")
             if row is None:
                 print("BACKTRACK")
                 self.backtrack()
             else:
                 col.select(row)
                 self.select.append(col)
+            row_total = 0
             for size, col in enumerate(NodeIterator(self.header, True)):
-                pass
-            if (len(sizes) >= 1):
-                if (sizes[-1] - size != 4) & (sizes[-1] - size != -4):
-                    print("Failure!")
-            sizes.append(size)
-            print(size)
+                row_total += col.get_size()
+            print(size, row_total, len(self.select), count)
+
+    def invalid(self):
+        for col in NodeIterator(self.header, True):
+            if col.get_size() == 0:
+                return True
+        return False
+
+    def random_column(self):
+        while True:
+            for col in NodeIterator(self.header, True):
+                if random.randrange(10) > 7:
+                    return col
+
+
 
     def backtrack(self):
         #ToDo: Replace with pop
-        col = self.select[-1]
+        col = self.select.pop()
         col.reverse()
-        self.select.remove(col)
+        col.tried = []
 
     def choose_column(self):
         min_size = 100

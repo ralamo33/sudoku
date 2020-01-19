@@ -50,9 +50,68 @@ class MyTestCase(unittest.TestCase):
                 next = next.bottom
             self.assertEqual(col.top, next)
 
+    def test_get_row(self):
+        m = LinkedMatrix()
+        col = m.cols[0]
+        for i in range(9):
+            row = col.get_row()
+            self.assertIsNotNone(row)
+            col.select(row)
+            col.reverse()
+        self.assertIsNone(col.get_row())
+
+    def test_reverse(self):
+        m = LinkedMatrix()
+        for i in range(100):
+            col = m.cols[random.randrange(324)]
+            col.select(col.get_row())
+            col.reverse()
+            self.assertEqual(324, len(m.cols))
+            for col in m.cols:
+                self.assertEqual(8, col.get_size())
+
+
     def test_speed(self):
         m = LinkedMatrix()
         m.knuth_algorithm()
+
+    def test_matrix_solved(self):
+        matrix = LinkedMatrix()
+        self.solve_matrix(matrix, 3, 1)
+        self.solve_matrix(matrix, 6, 2)
+        self.solve_matrix(matrix, 9, 3)
+        self.assertTrue(matrix.header.right is matrix.header)
+
+    def solve_matrix(self, matrix, row_limit, num):
+        for row in range((row_limit - 3), row_limit):
+            col_num = num
+            for col in range(9):
+                row_index = self.translate_header_to_index(row, col, col_num)
+                figured = False
+                for col2 in matrix.cols:
+                    for node in NodeIterator(col2, False):
+                        if node.index == row_index:
+                            figured = True
+                            chosen_col = col2
+                            chosen_row = node
+                            break
+                    if figured:
+                        break
+                col2.select(chosen_row)
+                col_num = (col_num % 9) + 1
+            num += 3
+
+    def translate_header_to_index(self, row, col, num):
+        index = row * 81 + col * 9 + num - 1
+        return index
+
+    def test_select_solution(self, rindex, cindex):
+        m = LinkedMatrix
+        col = m.cols[cindex]
+        for rows in NodeIterator(col, False):
+            if rows.index == rindex:
+                row = rows
+        col.select(rows)
 
     def test_dancing_col(self):
         dc = DancingColumn(1)
