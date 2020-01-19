@@ -11,31 +11,30 @@ class NodeIterator:
         """
         self.start = start
         self.right = right
-        if right:
-            self.next = start.right
-        else:
-            self.next = start.bottom
+        self.next = start
 
     def __next__(self):
         """
         Iterate through the nodes left or right.
         :return: Each node in the list.
         """
+        if self.right:
+            self.next = self.next.right
+        else:
+            self.next = self.next.bottom
         if self.next is self.start:
             raise StopIteration
-        elif self.right:
-            return self.next.right
-        else:
-            return self.next.bottom
+        return self.next
 
     def __iter__(self):
         return self
 
 class DancingNode:
-    """A quadrably linked node."""
+    """A quadrubably linked node."""
     def __init__(self, index=0):
         self.left = self.right = self.bottom = self.top = self
         self.index = index
+        self.column_head = False
 
     def link_top(self, top):
         top.bottom = self
@@ -69,6 +68,11 @@ class DancingNode:
         self.top.bottom = self.bottom
         self.bottom.top = self.top
 
+    def remove_row(self):
+        self.remove_vertical()
+        for node in NodeIterator(self, True):
+            node.remove_vertical()
+
     def restore_horizontal(self):
         self.left.right = self
         self.right.left = self
@@ -77,58 +81,80 @@ class DancingNode:
         self.top.bottom = self
         self.bottom.top = self
 
+    def restore_row(self):
+        self.restore_vertical()
+        for node in NodeIterator(self, True):
+            node.restore_vertical()
 
-class DancingColumn:
+    def get_column(self, i=0):
+        i += 1
+        if self.column_head:
+            return self
+        else:
+            return self.bottom.get_column(i)
+
+class DancingColumn(DancingNode):
     def __init__(self, index):
-        self.index = index
+        DancingNode.__init__(self, index)
         self.size = 0
-        self.dancing_link = DancingNode()
         self.tried = []
+        self.column_head = True
 
-    def link_bottom(self, node):
-        self.dancing_link.link_bottom(node)
+    def link_bottom(self, bottom):
+        DancingNode.link_bottom(self, bottom)
         self.size += 1
 
-    def link_top(self, node):
-        self.dancing_link.link_top(node)
-        self.size += 1
+    def remove_rows(self):
+        """
+        For each DancingNode in this column, remove the row they represent from the matrix.
+        :return: None
+        """
+        i = 0
+        for row in NodeIterator(self, False):
+            i += 1
+            row.remove_row()
 
-    def link_right(self, node):
-        self.dancing_link.link_right(node)
-
-    def link_left(self, node):
-        self.dancing_link.link_left(node)
+    def restore_rows(self):
+        """
+        For each DancingNode in this column, restore the row they represent back into the matrix.
+        :return: None
+        """
+        for row in NodeIterator(self, False):
+            row.restore_row()
 
     def select(self):
+        """
+        Select a row from this column and use it to reduce the matrix.
+        :return: True if Matrix successfully reduced
+        False if Matrix unsuccessfully reduced
+        None if column has tried all possible roles
+        """
         row = random.randrange(self.size)
-        choose = self.dancing_link
-        if len(self.tried) == self.size:
-            return False
-        while choose in self.tried or choose is self.dancing_link:
+        choose = self.bottom
+        while choose in self.tried:
             choose = choose.bottom
+            if choose is self or choose.bottom is choose:
+                return False
         self.tried.append(choose)
-        """#Get each of the columns this row belongs to.
-        for column in NodeIterator(choose, True):
-            #Remove each column from the Matrix
-            for column_nodes in NodeIterator(column, False):
-                column.remove_horizontal()
-                #For each node of the eliminated column. Remove the entire row.
-                for eliminate_row in NodeIterator(eliminate_col, True)
-                    eliminate_row.remove_vertical()"""
+        print(self.index)
+        #Get each of the columns this row belongs to.
+        self.remove_horizontal()
+        self.remove_rows()
+        for value, node in enumerate(NodeIterator(choose, True)):
+            head = node.get_column()
+            head.remove_horizontal()
+            head.remove_rows()
         return True
-        
 
-    def remove(self):
-        """Remove this column from the dancing matrix."""
-        self.dancing_link.remove_horizontal()
-        below = self.dancing_link.bottom
-        while below is not self:
-            below.remove_horizontal()
-            below = below.bottom
-
-    def restore(self):
-        """Restore this colun back into the dancing matrix."""
-        self.dancing_link
+    def reverse(self):
+        print(self.index)
+        selected = self.tried[-1]
+        self.restore_horizontal()
+        self.restore_rows()
+        for node in NodeIterator(selected, True):
+            head = node.get_column()
+            head.restore_horizontal()
+            head.restore_rows()
 
 
 
@@ -147,20 +173,27 @@ class LinkedMatrix:
         for i in range(((size ** 2) * 4)):
             col = DancingColumn(i)
             self.cols.append(col)
-            self.header.link_left(col.dancing_link)
+            self.header.link_left(col)
         for i in range(size ** 3):
-            for constraint in self.get_constraints(i):
-                self.cols[constraint].link_bottom(DancingNode(i))
+            row = [DancingNode(i), DancingNode(i), DancingNode(i), DancingNode(i)]
+            row[0].link_right(row[1])
+            row[1].link_right(row[2])
+            row[2].link_right(row[3])
+            for node, constraint in enumerate(self.get_constraints(i)):
+                self.cols[constraint].link_bottom(row[node])
 
     def knuth_algorithm(self):
         while self.header.right is not self.header:
             col = self.choose_column()
             if not col.select():
-               self.backtrack()
+                print("BACKTRACK!")
+                self.backtrack()
+            self.select.append(col)
 
     def backtrack(self):
         col = self.select[-1]
         col.reverse()
+        self.select.remove(col)
 
     def choose_column(self):
         min_size = 100

@@ -3,13 +3,40 @@ from solver import *
 
 class MyTestCase(unittest.TestCase):
 
+
+#RESTOREROWS FAILS
+    def test_select(self):
+        matrix = LinkedMatrix()
+        chosen = matrix.cols[0]
+        chosen.select()
+        self.assertNotEqual(matrix.header.right, chosen)
+        self.assertTrue(chosen.left.right, chosen.right)
+        self.assertTrue(chosen.right.left, chosen.left)
+        for row in NodeIterator(chosen, False):
+            for i, node in enumerate(NodeIterator(row, True)):
+                self.assertTrue(node.top.bottom, node.bottom)
+                self.assertTrue(node.bottom.top, node.top)
+        for size, col in enumerate(NodeIterator(matrix.header, True)):
+            s = size
+        self.assertEqual(319, s)
+        chosen.reverse()
+        for size, col in enumerate(NodeIterator(matrix.header, True)):
+            s = size
+        self.assertEqual(323, s)
+        for col in NodeIterator(matrix.header, True):
+            si = 0
+            for size, row in enumerate(NodeIterator(col, False)):
+                si = size
+            print(col.index)
+            self.assertEqual(si, 8)
+
     def test_header(self):
         matrix = LinkedMatrix()
-        self.assertEqual(matrix.header.right, matrix.cols[0].dancing_link)
-        self.assertEqual(matrix.header.left, matrix.cols[-1].dancing_link)
+        self.assertEqual(matrix.header.right, matrix.cols[0])
+        self.assertEqual(matrix.header.left, matrix.cols[-1])
         next = matrix.header.right
         for col in matrix.cols:
-            self.assertEqual(col.dancing_link, next)
+            self.assertEqual(col, next)
             next = next.right
 
 
@@ -19,15 +46,24 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(324, len(matrix.cols))
         for col in matrix.cols:
             self.assertEqual(9, col.size)
-            next = col.dancing_link.bottom
+            next = col.bottom
             for i in range(8):
                 next = next.bottom
-            self.assertEqual(col.dancing_link.top, next)
+            self.assertEqual(col.top, next)
+        for i in range(81):
+            matrix.cols[i].select()
+            for col in matrix.cols:
+                next = col.bottom
+                while next is not col:
+                    size = 0
+                    for node in NodeIterator(next, True):
+                        size += 1
+                    self.assertEqual(3, size)
+                    next = next.bottom
 
     def test_speed(self):
         m = LinkedMatrix()
-        for i in range(100):
-            m.cols[i].select()
+        m.knuth_algorithm()
 
 
     def test_dancing_col(self):
@@ -38,13 +74,13 @@ class MyTestCase(unittest.TestCase):
         dn4 = DancingNode(5)
         dc.link_bottom(dn)
         self.assertEqual(dc.size, 1)
-        self.assertEqual(dc.dancing_link.bottom, dn)
-        self.assertEqual(dc.dancing_link.top, dn)
+        self.assertEqual(dc.bottom, dn)
+        self.assertEqual(dc.top, dn)
         dc.link_bottom(dn2)
         dc.link_bottom(dn3)
         dc.link_bottom(dn4)
         self.assertEqual(dc.size, 4)
-        next = dc.dancing_link.bottom
+        next = dc.bottom
         self.assertEqual(next, dn4)
         next = next.bottom
         self.assertEqual(next, dn3)
@@ -52,7 +88,8 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(next, dn2)
         next = next.bottom
         self.assertEqual(next, dn)
-        self.assertEqual(dc.dancing_link.top, dn)
+        self.assertEqual(dc.top, dn)
+        dc.remo
 
 
 
