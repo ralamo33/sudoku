@@ -4,11 +4,10 @@ from solver import *
 class MyTestCase(unittest.TestCase):
 
 
-#RESTOREROWS FAILS
     def test_select(self):
         matrix = LinkedMatrix()
         chosen = matrix.cols[0]
-        chosen.select()
+        chosen.select(chosen.get_row())
         self.assertNotEqual(matrix.header.right, chosen)
         self.assertTrue(chosen.left.right, chosen.right)
         self.assertTrue(chosen.right.left, chosen.left)
@@ -50,21 +49,10 @@ class MyTestCase(unittest.TestCase):
             for i in range(8):
                 next = next.bottom
             self.assertEqual(col.top, next)
-        for i in range(81):
-            matrix.cols[i].select()
-            for col in matrix.cols:
-                next = col.bottom
-                while next is not col:
-                    size = 0
-                    for node in NodeIterator(next, True):
-                        size += 1
-                    self.assertEqual(3, size)
-                    next = next.bottom
 
     def test_speed(self):
         m = LinkedMatrix()
         m.knuth_algorithm()
-
 
     def test_dancing_col(self):
         dc = DancingColumn(1)
@@ -89,7 +77,6 @@ class MyTestCase(unittest.TestCase):
         next = next.bottom
         self.assertEqual(next, dn)
         self.assertEqual(dc.top, dn)
-        dc.remo
 
 
 

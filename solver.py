@@ -36,6 +36,11 @@ class DancingNode:
         self.index = index
         self.column_head = False
 
+    def get_size(self):
+        for size, node in enumerate(NodeIterator(self, True)):
+            pass
+        return size
+
     def link_top(self, top):
         top.bottom = self
         top.top = self.top
@@ -65,13 +70,10 @@ class DancingNode:
         self.right.left = self.left
 
     def remove_vertical(self):
-        header = self.get_column()
-        header.size -= 1
         self.top.bottom = self.bottom
         self.bottom.top = self.top
 
     def remove_row(self):
-        self.remove_vertical()
         for node in NodeIterator(self, True):
             node.remove_vertical()
 
@@ -102,6 +104,12 @@ class DancingColumn(DancingNode):
         self.tried = []
         self.column_head = True
 
+    def get_size(self):
+        answer = 0
+        for size, row in enumerate(NodeIterator(self, False)):
+            answer = size
+        return answer
+
     def link_bottom(self, bottom):
         DancingNode.link_bottom(self, bottom)
         self.size += 1
@@ -124,29 +132,21 @@ class DancingColumn(DancingNode):
         for row in NodeIterator(self, False):
             row.restore_row()
 
-    def select(self):
-        """
-        Select a row from this column and use it to reduce the matrix.
-        :return: True if Matrix successfully reduced
-        False if Matrix unsuccessfully reduced
-        """
-        row = random.randrange(self.size)
-        chosen = None
-        for choose in NodeIterator(self, False):
-            if choose not in self.tried:
-                chosen = choose
-        if chosen is None:
-            return False
-        self.tried.append(choose)
-        print(self.index)
+    def get_row(self):
+        for row in NodeIterator(self, False):
+            if row not in self.tried:
+                return row
+
+    def select(self, row):
+        self.tried.append(row)
         #Get each of the columns this row belongs to.
-        self.remove_horizontal()
-        self.remove_rows()
-        for value, node in enumerate(NodeIterator(choose, True)):
+        for value, node in enumerate(NodeIterator(row, True)):
             head = node.get_column()
             head.remove_horizontal()
             head.remove_rows()
-        return True
+        self.remove_horizontal()
+        self.remove_rows()
+        pass
 
     def reverse(self):
         selected = self.tried[-1]
@@ -184,29 +184,41 @@ class LinkedMatrix:
                 self.cols[constraint].link_bottom(row[node])
 
     def knuth_algorithm(self):
+        sizes = []
         while self.header.right is not self.header:
             col = self.choose_column()
-            if not col.select():
-                print("BACKTRACK!")
+            row = col.get_row()
+            if row is not col.bottom:
+                print("Special")
+            if row is None:
+                print("BACKTRACK")
                 self.backtrack()
-            self.select.append(col)
+            else:
+                col.select(row)
+                self.select.append(col)
+            for size, col in enumerate(NodeIterator(self.header, True)):
+                pass
+            if (len(sizes) >= 1):
+                if (sizes[-1] - size != 4) & (sizes[-1] - size != -4):
+                    print("Failure!")
+            sizes.append(size)
+            print(size)
 
     def backtrack(self):
+        #ToDo: Replace with pop
         col = self.select[-1]
         col.reverse()
         self.select.remove(col)
-        if not col.select():
-            self.backtrack()
-        self.select.append(col)
 
     def choose_column(self):
         min_size = 100
         options = []
         for col in self.cols:
-            if col.size < min_size:
-                min_size = col.size
+            size = col.get_size()
+            if size < min_size:
+                min_size = size
                 options.append(col)
-            elif col.size == min_size:
+            elif size == min_size:
                 options.append(col)
         return options[random.randrange(len(options))]
 
