@@ -65,6 +65,8 @@ class DancingNode:
         self.right.left = self.left
 
     def remove_vertical(self):
+        header = self.get_column()
+        header.size -= 1
         self.top.bottom = self.bottom
         self.bottom.top = self.top
 
@@ -127,14 +129,14 @@ class DancingColumn(DancingNode):
         Select a row from this column and use it to reduce the matrix.
         :return: True if Matrix successfully reduced
         False if Matrix unsuccessfully reduced
-        None if column has tried all possible roles
         """
         row = random.randrange(self.size)
-        choose = self.bottom
-        while choose in self.tried:
-            choose = choose.bottom
-            if choose is self or choose.bottom is choose:
-                return False
+        chosen = None
+        for choose in NodeIterator(self, False):
+            if choose not in self.tried:
+                chosen = choose
+        if chosen is None:
+            return False
         self.tried.append(choose)
         print(self.index)
         #Get each of the columns this row belongs to.
@@ -147,7 +149,6 @@ class DancingColumn(DancingNode):
         return True
 
     def reverse(self):
-        print(self.index)
         selected = self.tried[-1]
         self.restore_horizontal()
         self.restore_rows()
@@ -194,6 +195,9 @@ class LinkedMatrix:
         col = self.select[-1]
         col.reverse()
         self.select.remove(col)
+        if not col.select():
+            self.backtrack()
+        self.select.append(col)
 
     def choose_column(self):
         min_size = 100
