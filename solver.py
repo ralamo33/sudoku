@@ -99,8 +99,31 @@ class KnuthColumn:
         """Add a KnuthRow to the list of knuth rows this column is activated on.
         :parameter knuth_row (KnuthRow): A row of the KnuthMatrix this is active on.
         """
+        knuth_row.get_header()
         if knuth_row not in self.knuth_rows:
             self.knuth_rows.append(knuth_row)
+
+class DancingColumn:
+    def __init__(self, index):
+        self.index = index
+        self.knuth_rows = []
+        self.bottom = self
+        self.top = self
+
+    def update_knuth_rows(self, knuth_row):
+        new_bottom = DancingLink(knuth_row.get_header)
+        new_bottom.top = self
+        self.bottom.top = knuth_row
+        self.bottom = new_bottom
+
+
+class DancingLink:
+    def __init__(self, header):
+        self.header = header
+        self.top = self
+        self.bottom = self
+
+
 
 
 Removed = collections.namedtuple("Removed", "chosen_pair rows cols")
@@ -135,7 +158,7 @@ class KnuthMatrix:
     def knuth_algorithm(self):
         """Use knuth's algorithm to solve the exact cover problem represented by self."""
         while not self.solved():
-            print(len(self.rows), len(self.cols))
+            # print(len(self.rows), len(self.cols))
             chosen_col = self.get_rand_col()
             #ToDo: Replace with something more efficien
             rows = [row for row in chosen_col.knuth_rows if row not in self.wrong]

@@ -38,7 +38,6 @@ class MyTestCase(unittest.TestCase):
 
     def test_knuth_algorithm(self):
             selected = KnuthMatrix().knuth_algorithm()
-            print(selected)
 
     def test_matrix_select(self, header=(6, 3, 3)):
         matrix = KnuthMatrix()
