@@ -3,6 +3,37 @@ import math
 import random
 """Solves a sudoku board using Knuth's Algorithm."""
 
+class DancingIterator:
+    def __init__(self, start, right, include=False):
+        """
+        Iterate through the nodes in a row or column.
+        :param start: The starting node.
+        :param right: True if you are iterating through the right. Otherwise you iteate from the bottom.
+        """
+        self.start = start
+        self.right = right
+        self.next = start
+        self.include = include
+
+    def __next__(self):
+        """
+        Iterate through the nodes left or right.
+        :return: Each node in the list.
+        """
+        if self.include:
+            self.include = False
+            return self.start
+        if self.right:
+            self.next = self.next.right
+        else:
+            self.next = self.next.bottom
+        if self.next is self.start:
+            raise StopIteration
+        return self.next
+
+    def __iter__(self):
+        return self
+
 class RowGenerator:
     """Iterates through the rows of the Knuth's Matrix.
     Specifically, next generates a header and row pair.
@@ -31,7 +62,198 @@ class RowGenerator:
             self.row += 1
         else:
             raise StopIteration
-        return KnuthRow(self.row, self.col, self.number)
+        return self.row, self.col, self.number
+
+
+
+class DancingHead():
+    def __init__(self):
+        self.right = self
+        self.left = self
+
+    def link_left(self, left):
+        left.right = self
+        left.left = self.left
+        self.left.right = left
+        self.left = left
+
+    def __iter__(self):
+        return DancingIterator(self, True)
+        
+    def size(self):
+        size = -1
+        for size, col in enumerate(self):
+            pass
+        return size + 1
+
+class DancingNode:
+    def __init__(self, header, coordinates):
+        self.row = coordinates[0]
+        self.col = coordinates[1]
+        self.num = coordinates[2]
+        self.header = header
+        self.right = self.left = self.top = self.bottom = self
+        self.header.link_top(self)
+
+    def link_left(self, left):
+        left.right = self
+        left.left = self.left
+        self.left.right = left
+        self.left = left
+
+    def size(self):
+        size = -1
+        for size, col in enumerate(self):
+            pass
+        return size + 1
+
+    def remove(self):
+        self.top.bottom = self.bottom
+        self.bottom.top = self.top
+
+    def restore(self):
+        self.top.bottom = self
+        self.bottom.top = self
+
+    def __iter__(self):
+        return DancingIterator(self, True, True)
+
+class DancingColumn:
+    def __init__(self, index):
+        self.left = self.right = self.bottom = self.top = self
+        self.index = index
+
+    def remove(self):
+        self.left.right = self.right
+        self.right.left = self.left
+
+    def restore(self):
+        self.left.right = self
+        self.right.left = self
+
+    def link_top(self, top):
+        top.bottom = self
+        top.top = self.top
+        self.top.bottom = top
+        self.top = top
+
+    def size(self):
+        size = -1
+        for size, col in enumerate(self):
+            pass
+        return size + 1
+
+    def __iter__(self):
+        return DancingIterator(self, False)
+
+class DancingMatrix:
+    def __init__(self, size=9):
+        self.wrong = []
+        self.selected = []
+        self.size = size
+        self.submatrix = math.sqrt(self.size)
+        self.constraint_length = self.size ** 2
+        self.header = DancingHead()
+        cols = dict()
+        for index in range(((size ** 2) * 4)):
+            col = DancingColumn(index)
+            cols.update({index: col})
+            self.header.link_left(col)
+        for coordinates in RowGenerator():
+            headers = self.get_constraints(coordinates[0], coordinates[1], coordinates[2])
+            first = None
+            for index in headers:
+                col = cols.get(index)
+                row = DancingNode(col, coordinates)
+                if first is None:
+                    first = row
+                first.link_left(row)
+
+    def solved(self):
+        return self.header.right is self.header
+
+    def get_rand_col(self):
+        min = 100
+        possibles = []
+        for col in self.header:
+            size = col.size()
+            if size < min:
+                min = size
+                possibles.append(col)
+            elif size == min:
+                possibles.append(col)
+        return possibles
+
+
+    def knuth_algorithm(self):
+        """Use knuth's algorithm to solve the exact cover problem represented by self."""
+        while not self.solved():
+            chosen_col = self.header.right
+            rows = [row for row in chosen_col if row not in self.wrong]
+            if len(rows) == 0:
+                print("BACKTRACK")
+                self.backtrack()
+                continue
+            chosen_node = rows[random.randrange(len(rows))]
+            self.select(chosen_node)
+            print(self.header.size(), len(self.selected))
+
+
+    def select(self, chosen_node):
+        for node in chosen_node:
+            col = node.header
+            col.remove()
+            for row in col:
+                for element in DancingIterator(row, True):
+                    element.remove()
+        self.selected.append(chosen_node)
+
+    def backtrack(self):
+        """Reverse the previous move after a failure."""
+        last_move = self.selected.pop()
+        self.wrong.append(last_move)
+        for node in last_move:
+            col = node.header
+            col.restore()
+            for row in col:
+                for element in DancingIterator(row, True):
+                    element.restore()
+
+    def get_constraints(self, row, col, num):
+        """Return the indices of the KnuthColumns active in this."""
+        return (self._cell_constraints(row, col), self._row_constraints(row, num),
+                self._column_constraints(col, num), self._submatrix_constraints(row, col, num))
+
+    def _cell_constraints(self, row, col):
+        """Return the knuth column activated by this row's row-number-column constraints
+        :return int"""
+        return row * self.size + col
+
+    def _row_constraints(self, row, num):
+        """Return the knuth column activated by this row's row-number-column constraints
+        :return int"""
+        return self.constraint_length + num + (row * self.size) - 1
+
+    def _column_constraints(self, col, num):
+        """Return the knuth column activated by this row's row-number-column constraints
+        :return int"""
+        return (self.constraint_length * 2) + num + col * self.size - 1
+
+    def _submatrix_constraints(self, row, col, num):
+        """Return the knuth column activated by this row's row-number-column constraints
+        :return int"""
+        box = ((math.floor(row / self.submatrix)) * self.submatrix) + math.floor(col / self.submatrix)
+        return int((self.constraint_length * self.submatrix) + (box * self.size) + num) - 1
+
+
+
+
+
+
+
+
+
+
 
 class KnuthRow():
     """A row of the Knuth matrix. Stores the header and active columns."""
@@ -102,15 +324,6 @@ class KnuthColumn:
         knuth_row.get_header()
         if knuth_row not in self.knuth_rows:
             self.knuth_rows.append(knuth_row)
-
-class DancingColumn:
-    def __init__(self, index):
-        self.index = index
-        self.knuth_rows = []
-        self.bottom = self
-        self.top = self
-
-    def update_knuth_rows(self, knuth_row):
         new_bottom = DancingLink(knuth_row.get_header)
         new_bottom.top = self
         self.bottom.top = knuth_row
@@ -122,9 +335,7 @@ class DancingLink:
         self.header = header
         self.top = self
         self.bottom = self
-
-
-
+        self.right = self
 
 Removed = collections.namedtuple("Removed", "chosen_pair rows cols")
 
@@ -138,11 +349,11 @@ class KnuthMatrix:
         :param rows: (List of KnuthRow):Each row represents a specific number placed on a specific Sudoku tile.
         :param cols: (List of KnuthCol):Each column represents a constraint that needs to be met to solve the puzzle.
         """
-        #ToDo: Test that this results in each row being attached to appropriate cols, and vice versa
+
+
         self.cols = dict()
-        #ToDo: Create a second dictionary that holds columns by their number of rows.
         for index in range(324):
-            self.cols.update({index: KnuthColumn(index)})
+            self.cols.update({index: DancingColumn(index)})
         self.rows = dict()
         for rb in RowGenerator():
             self.rows.update({rb.get_header(): rb})
@@ -220,4 +431,5 @@ class KnuthMatrix:
             self.add_row(row)
 
 if __name__ == "__main__":
-    KnuthMatrix().knuth_algorithm()
+    m = DancingMatrix(9)
+    pass
