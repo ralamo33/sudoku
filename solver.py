@@ -190,6 +190,10 @@ class DancingMatrix:
         while not self.solved():
             chosen_col = self.header.right
             rows = [row for row in chosen_col if row not in self.wrong]
+            if self.invalid():
+                self.backtrack()
+                self.wrong = []
+                continue
             if len(rows) == 0:
                 print("BACKTRACK")
                 self.backtrack()
@@ -197,6 +201,12 @@ class DancingMatrix:
             chosen_node = rows[random.randrange(len(rows))]
             self.select(chosen_node)
             print(self.header.size(), len(self.selected))
+
+    def invalid(self):
+        for col in self.header:
+            if col.size == 0:
+                return True
+        return False
 
 
     def select(self, chosen_node):
